@@ -184,3 +184,76 @@ public class SessionUser implements Serializable{
     private String name;
 //...
 ~~~
+
+
+
+## 5-7 No qualifying bean of type :  expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+
+[5. 스프링 시큐리티와 OAuth2.0으로 로그인 구현](https://velog.io/@redcarrot01/SpringBoot-AWS-5.-%EC%8A%A4%ED%94%84%EB%A7%81-%EC%8B%9C%ED%81%90%EB%A6%AC%ED%8B%B0%EC%99%80-OAuth2.0%EC%9C%BC%EB%A1%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84) 에서 만난 오류다.
+
+
+
+> Failed to load ApplicationContext
+> java.lang.IllegalStateException: Failed to load ApplicationContext
+> 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:125)
+> ...
+>
+> : org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.yujin.service.springboot.config.auth.CustomOAuth2UserService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+
+
+
+**No qualifying bean of type. expected at least 1 bean which qualifies as autowire candidate**
+
+직역하면, 만족하는 빈이 없다. autowire할 빈이 적어도 1개 필요하다.
+
+
+
+엥? 어노테이션 @Repository, @Service .. 건드린 부분은 없었다.
+
+이문제는 아닌 것 같고,  SecurityConfig 스캔 제거 코드 추가하고 나서 난 오류라, 이부분을 살폈다.
+
+<br>
+
+#### 드디어 발견
+
+에러 로그 귀찮지만, 다시 보았다.
+
+~~~
+Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'securityConfig' defined in file [C:\MyProject_and_Study\springboot-aws-webservice\build\classes\java\main\com\yujin\service\springboot\config\auth\SecurityConfig.class]: Unsatisfied dependency expressed through constructor parameter 0; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.yujin.service.springboot.config.auth.CustomOAuth2UserService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+...
+~~~
+
+직역하면, 내 로컬에 있는 securityConfig는 빈 생성에 문제가 있다, CustomOAuth2UserService에 적합한 빈이 없다..
+
+바로 import를 확인했다.
+
+
+
+난 엉뚱하게도 카타리나 친구를 import하고 있었다.
+
+~~~java
+import org.apache.catalina.security.SecurityConfig;
+~~~
+
+
+
+***똥 멍 청 이 !!***
+
+
+
+### 원인
+
+에러 로그 귀찮지만, 다시 보기
+
+**빈 생성에 문제가 있는 경우, 어노테이션 OR IMPORT 위치 확인하기**
+
+import 오류는 가끔씩 있는 편, 꼭 확인!
+
+
+
+### 해결
+
+~~~java
+import com.yujin.service.springboot.config.auth.SecurityConfig;
+~~~
+
